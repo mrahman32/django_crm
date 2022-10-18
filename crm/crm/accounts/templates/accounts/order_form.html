@@ -8,12 +8,12 @@
 		<div class="card card-body">
 
 			<form action="" method="POST">
+				{{formset.management_form}}
 				{% csrf_token %}
 				{% for formV in formset %}		
 					{{formV}}
 					<hr>
 				{% endfor %}
-
 
 				{% comment %} {{formset}} {% endcomment %}
 				
