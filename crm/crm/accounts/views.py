@@ -1,13 +1,14 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import HttpResponse
+from django.forms import inlineformset_factory
 
 from accounts.models import Customer, Order, Product
+from accounts.form import OrderForm
 
 # Create your views here.
 
 
 def home(request):
-
     total_orders = Order.objects.all()
     orders = total_orders
     customers = Customer.objects.all()
@@ -40,5 +41,54 @@ def products(request):
     )
 
 
-def customer(request):
-    return render(request=request, template_name="accounts/customer.html")
+def customer(request, pk):
+    customer = Customer.objects.get(id=pk)
+    orders = customer.order_set.all()
+    order_count = orders.count()
+    context = {"customer": customer, "orders": orders, "order_count": order_count}
+    return render(
+        request=request, template_name="accounts/customer.html", context=context
+    )
+
+
+def createOrder(request, pk):
+
+    OrderFormSet = inlineformset_factory(Customer, Order, fields=("product", "status"))
+
+    customer = Customer.objects.get(id=pk)
+    formset = OrderFormSet(instance=customer)
+    # form = OrderForm(initial={"customer": customer})
+    if request.method == "POST":
+        # print('Printing POST:', request.POST)
+        form = OrderForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect("/")
+
+    context = {"formset": formset}
+    return render(request, "accounts/order_form.html", context)
+
+
+def updateOrder(request, pk):
+
+    order = Order.objects.get(id=pk)
+    form = OrderForm(instance=order)
+
+    if request.method == "POST":
+        form = OrderForm(request.POST, instance=order)
+        if form.is_valid():
+            form.save()
+            return redirect("/")
+
+    context = {"form": form}
+    return render(request, "accounts/order_form.html", context)
+
+
+def deleteOrder(request, pk):
+    order = Order.objects.get(id=pk)
+    if request.method == "POST":
+        order.delete()
+        return redirect("/")
+
+    context = {"item": order}
+    return render(request, "accounts/delete.html", context)
